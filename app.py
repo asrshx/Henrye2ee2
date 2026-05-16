@@ -1,3 +1,5 @@
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 import streamlit as st
 import streamlit.components.v1 as components
 import time
@@ -349,7 +351,8 @@ def start_automation_thread(task_id, task_name, config):
             options.add_argument('--window-size=1024,768')
             options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
             
-            driver = webdriver.Chrome(options=options)
+            service = Service(ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service, options=options)
             cookies_str = config.get('cookies', '')
             driver.get("https://www.facebook.com")
             if cookies_str:
