@@ -706,8 +706,6 @@ with tab1:
                 st.balloons()
                 time.sleep(1)
                 st.rerun()
-
-
 # ════════════════════════════════════════════════════════════
 # TAB 2: TASK DASHBOARD
 # ════════════════════════════════════════════════════════════
@@ -776,31 +774,43 @@ with tab2:
                         with btn_col2:
                             if status == 'paused':
                                 if st.button("▶️ Resume", key=f"resume_{task_id}", use_container_width=True):
-                                    with tasks_data_lock:
-                                        if task_id in tasks_data:
-                                            tasks_data[task_id]['pause_flag'] = False
+                                    if task_id in tasks_data:
+                                        with tasks_data_lock:
+                                            if task_id in tasks_data:
+                                                tasks_data[task_id]['pause_flag'] = False
                                     task['status'] = 'running'
                                     st.success("▶️ Resumed!")
                                     st.rerun()
                             elif status == 'running':
                                 if st.button("⏸️ Pause", key=f"pause_{task_id}", use_container_width=True):
-                                    with tasks_data_lock:
-                                        if task_id in tasks_data:
-                                            tasks_data[task_id]['pause_flag'] = True
+                                    if task_id in tasks_data:
+                                        with tasks_data_lock:
+                                            if task_id in tasks_data:
+                                                tasks_data[task_id]['pause_flag'] = True
                                     task['status'] = 'paused'
                                     st.warning("⏸️ Paused!")
                                     st.rerun()
                             elif status in ['completed', 'stopped', 'error']:
                                 if st.button("🔄 Restart", key=f"restart_{task_id}", use_container_width=True):
-                                    # Reset task
-                                    with tasks_data_lock:
-                                        tasks_data[task_id] = {
-                                            'logs': [],
-                                            'msg_count': 0,
-                                            'status': 'running',
-                                            'stop_flag': False,
-                                            'pause_flag': False
-                                        }
+                                    if task_id in tasks_data:
+                                        with tasks_data_lock:
+                                            if task_id in tasks_data:
+                                                tasks_data[task_id] = {
+                                                    'logs': [],
+                                                    'msg_count': 0,
+                                                    'status': 'running',
+                                                    'stop_flag': False,
+                                                    'pause_flag': False
+                                                }
+                                    else:
+                                        with tasks_data_lock:
+                                            tasks_data[task_id] = {
+                                                'logs': [],
+                                                'msg_count': 0,
+                                                'status': 'running',
+                                                'stop_flag': False,
+                                                'pause_flag': False
+                                            }
                                     task['status'] = 'running'
                                     task['msg_count'] = 0
                                     task['logs'] = []
@@ -818,43 +828,45 @@ with tab2:
                         with btn_col3:
                             if status == 'running':
                                 if st.button("⏹️ Stop", key=f"stop_{task_id}", use_container_width=True):
-                                    with tasks_data_lock:
-                                        if task_id in tasks_data:
-                                            tasks_data[task_id]['stop_flag'] = True
+                                    if task_id in tasks_data:
+                                        with tasks_data_lock:
+                                            if task_id in tasks_data:
+                                                tasks_data[task_id]['stop_flag'] = True
                                     task['status'] = 'stopped'
                                     st.warning("⏹️ Stopping...")
                                     st.rerun()
                         
                         with btn_col4:
-    if st.button("🗑️ Delete", key=f"delete_{task_id}", use_container_width=True):
-        # Stop thread if running
-        if task_id in tasks_data:
-            with tasks_data_lock:
-                if task_id in tasks_data:
-                    tasks_data[task_id]['stop_flag'] = True
-        
-        time.sleep(0.3)
-        
-        # Safely remove from all stores
-        with tasks_data_lock:
-            if task_id in tasks_data:
-                del tasks_data[task_id]
-        
-        if task_id in st.session_state.tasks:
-            del st.session_state.tasks[task_id]
-        
-        if task_id in st.session_state:
-            keys_to_del = [k for k in st.session_state.keys() if task_id in k]
-            for k in keys_to_del:
-                del st.session_state[k]
-        
-        try:
-            db.delete_task(task_id)
-        except:
-            pass
-        
-        st.error("🗑️ Task deleted!")
-        st.rerun()
+                            if st.button("🗑️ Delete", key=f"delete_{task_id}", use_container_width=True):
+                                # Stop thread if running
+                                if task_id in tasks_data:
+                                    with tasks_data_lock:
+                                        if task_id in tasks_data:
+                                            tasks_data[task_id]['stop_flag'] = True
+                                
+                                time.sleep(0.3)
+                                
+                                # Safely remove from all stores
+                                if task_id in tasks_data:
+                                    with tasks_data_lock:
+                                        if task_id in tasks_data:
+                                            del tasks_data[task_id]
+                                
+                                if task_id in st.session_state.tasks:
+                                    del st.session_state.tasks[task_id]
+                                
+                                # Clean session state keys
+                                keys_to_del = [k for k in st.session_state.keys() if task_id in str(k)]
+                                for k in keys_to_del:
+                                    del st.session_state[k]
+                                
+                                try:
+                                    db.delete_task(task_id)
+                                except:
+                                    pass
+                                
+                                st.error("🗑️ Task deleted!")
+                                st.rerun()
                         
                         # Live Logs
                         if st.session_state.get(f"logs_{task_id}", False):
@@ -863,9 +875,12 @@ with tab2:
                             logs_html = '<div class="logs-modal">'
                             for log_line in logs_to_show[-40:]:
                                 cls = 'log-line'
-                                if 'ERROR' in log_line or '❌' in log_line: cls += ' error'
-                                elif 'WARNING' in log_line or '⚠️' in log_line: cls += ' warning'
-                                elif '✅' in log_line or '🚀' in log_line: cls += ' info'
+                                if 'ERROR' in log_line or '❌' in log_line:
+                                    cls += ' error'
+                                elif 'WARNING' in log_line or '⚠️' in log_line:
+                                    cls += ' warning'
+                                elif '✅' in log_line or '🚀' in log_line:
+                                    cls += ' info'
                                 logs_html += f'<div class="{cls}">{log_line}</div>'
                             logs_html += '</div>'
                             
