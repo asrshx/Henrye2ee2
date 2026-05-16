@@ -235,7 +235,7 @@ def setup_browser2(state=None):
         raise
 
 # ── SEND MESSAGE ──────────────────────────────────────────────
-def type_and_send(driver, el, msg, state=None):
+def type_and_send_v2(driver, el, msg, state=None):
     """Type message using React-compatible events"""
     try:
         # Step 1: Focus and click
