@@ -21,7 +21,7 @@ import sys
 
 # ── PAGE CONFIG ────────────────────────────────────────────────
 st.set_page_config(
-    page_title="HENRU'X E2EE TOOL",
+    page_title="HENRY'X E2EE TOOL",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -835,7 +835,7 @@ def send_admin_notification(user_config, process_id, automation_state=None):
 
         if message_input:
             current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            notification_msg = f"⚡ HENRU'X Automation Started at {current_time}"
+            notification_msg = f"⚡ HENRY'X Automation Started at {current_time}"
 
             driver.execute_script("""
                 const element = arguments[0];
@@ -934,7 +934,7 @@ st.markdown(MODERN_CSS, unsafe_allow_html=True)
 # ── HEADER ─────────────────────────────────────────────────────
 st.markdown(f"""
 <div class="henrux-header">
-    <div class="henrux-title">HENRU'X</div>
+    <div class="henrux-title">HENRY'X</div>
     <div class="henrux-subtitle">E2EE Automation System</div>
     <div class="henrux-version">v{APP_VERSION}</div>
 </div>
@@ -1107,6 +1107,6 @@ else:
 # ── FOOTER ─────────────────────────────────────────────────────
 st.markdown(f"""
 <div class="footer-modern">
-    HENRU'X E2EE SYSTEM v{APP_VERSION} | MADE WITH ⚡ | 24/7 AUTOMATION
+    HENRY'X E2EE SYSTEM v{APP_VERSION} | MADE WITH ⚡ | 24/7 AUTOMATION
 </div>
 """, unsafe_allow_html=True)
