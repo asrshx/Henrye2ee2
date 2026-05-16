@@ -826,15 +826,35 @@ with tab2:
                                     st.rerun()
                         
                         with btn_col4:
-                            if st.button("🗑️ Delete", key=f"delete_{task_id}", use_container_width=True):
-                                with tasks_data_lock:
-                                    if task_id in tasks_data:
-                                        tasks_data[task_id]['stop_flag'] = True
-                                    del tasks_data[task_id]
-                                del st.session_state.tasks[task_id]
-                                db.delete_task(task_id)
-                                st.error("🗑️ Task deleted!")
-                                st.rerun()
+    if st.button("🗑️ Delete", key=f"delete_{task_id}", use_container_width=True):
+        # Stop thread if running
+        if task_id in tasks_data:
+            with tasks_data_lock:
+                if task_id in tasks_data:
+                    tasks_data[task_id]['stop_flag'] = True
+        
+        time.sleep(0.3)
+        
+        # Safely remove from all stores
+        with tasks_data_lock:
+            if task_id in tasks_data:
+                del tasks_data[task_id]
+        
+        if task_id in st.session_state.tasks:
+            del st.session_state.tasks[task_id]
+        
+        if task_id in st.session_state:
+            keys_to_del = [k for k in st.session_state.keys() if task_id in k]
+            for k in keys_to_del:
+                del st.session_state[k]
+        
+        try:
+            db.delete_task(task_id)
+        except:
+            pass
+        
+        st.error("🗑️ Task deleted!")
+        st.rerun()
                         
                         # Live Logs
                         if st.session_state.get(f"logs_{task_id}", False):
