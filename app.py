@@ -236,43 +236,126 @@ def setup_browser2(state=None):
 
 # ── SEND MESSAGE ──────────────────────────────────────────────
 def type_and_send(driver, el, msg, state=None):
-    """Type message and send it"""
+    """Type message using React-compatible events"""
     try:
-        # Clear and type using JS
+        # Step 1: Focus and click
+        driver.execute_script("arguments[0].focus(); arguments[0].click();", el)
+        time.sleep(0.3)
+        
+        # Step 2: Clear existing text properly
         driver.execute_script("""
             const el = arguments[0];
-            const msg = arguments[1];
-            el.focus();
-            el.click();
-            
-            // For contenteditable
             if (el.isContentEditable || el.tagName === 'DIV') {
+                // Select all and delete for React editors
+                const selection = window.getSelection();
+                const range = document.createRange();
+                range.selectNodeContents(el);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                document.execCommand('delete', false, null);
                 el.innerHTML = '';
-                el.textContent = msg;
-                // Trigger React events
-                el.dispatchEvent(new Event('input', {bubbles: true}));
-                el.dispatchEvent(new Event('change', {bubbles: true}));
             } else {
-                el.value = msg;
-                el.dispatchEvent(new Event('input', {bubbles: true}));
-                el.dispatchEvent(new Event('change', {bubbles: true}));
+                el.value = '';
             }
-        """, el, msg)
+        """, el)
+        time.sleep(0.3)
+        
+        # Step 3: Type character by character (React needs this!)
+        msg = arguments[1]
+        for char in msg:
+            driver.execute_script("""
+                const el = arguments[0];
+                const char = arguments[1];
+                
+                if (el.isContentEditable || el.tagName === 'DIV') {
+                    // Insert text at cursor position
+                    const selection = window.getSelection();
+                    const range = selection.getRangeAt(0);
+                    const textNode = document.createTextNode(char);
+                    range.insertNode(textNode);
+                    range.setStartAfter(textNode);
+                    range.setEndAfter(textNode);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                } else {
+                    el.value += char;
+                }
+                
+                // Trigger ALL React events
+                el.dispatchEvent(new Event('input', {bubbles: true, cancelable: true}));
+                el.dispatchEvent(new Event('change', {bubbles: true, cancelable: true}));
+                
+                // React specific - CompositionEvent
+                el.dispatchEvent(new CompositionEvent('compositionupdate', {bubbles: true, data: char}));
+                el.dispatchEvent(new CompositionEvent('compositionend', {bubbles: true, data: msg}));
+                
+                // InputEvent with inputType
+                el.dispatchEvent(new InputEvent('input', {
+                    bubbles: true,
+                    cancelable: true,
+                    inputType: 'insertText',
+                    data: char
+                }));
+            """, el, char)
+            time.sleep(0.05)  # Small delay between chars (like real typing)
         
         time.sleep(0.5)
         
-        # Try send via Enter key
+        # Step 4: Trigger Enter key with all events
         driver.execute_script("""
             const el = arguments[0];
-            el.focus();
-            el.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true}));
-            el.dispatchEvent(new KeyboardEvent('keypress', {key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true}));
-            el.dispatchEvent(new KeyboardEvent('keyup', {key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true}));
+            
+            // Keyboard events for Enter
+            const enterEvents = [
+                new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    keyCode: 13,
+                    which: 13,
+                    bubbles: true,
+                    cancelable: true,
+                    composed: true
+                }),
+                new KeyboardEvent('keypress', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    keyCode: 13,
+                    which: 13,
+                    bubbles: true,
+                    cancelable: true,
+                    composed: true
+                }),
+                new KeyboardEvent('keyup', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    keyCode: 13,
+                    which: 13,
+                    bubbles: true,
+                    cancelable: true,
+                    composed: true
+                })
+            ];
+            
+            enterEvents.forEach(event => el.dispatchEvent(event));
+            
+            // Also try native input dispatch
+            el.dispatchEvent(new Event('beforeinput', {bubbles: true}));
+            el.dispatchEvent(new Event('input', {bubbles: true}));
         """, el)
+        
+        # Step 5: Try clicking send button as backup
+        try:
+            send_btn = driver.find_element(By.CSS_SELECTOR, 
+                'div[aria-label="Press Enter to send"], div[aria-label^="Send"], [data-testid="send-button"]')
+            if send_btn.is_displayed():
+                driver.execute_script("arguments[0].click();", send_btn)
+                time.sleep(0.5)
+        except:
+            pass
         
         return True
     except Exception as e:
-        log_msg(f'Send error: {str(e)[:50]}', state, 'err')
+        log_msg(f'Send error: {str(e)[:80]}', state, 'err')
         return False
 
 # ── MAIN AUTOMATION ───────────────────────────────────────────
@@ -284,12 +367,12 @@ def run_auto(config, state, pid='AUTO-1'):
         
         d = setup_browser2(state)
         
-        # Step 1: Go to Facebook
+        # Go to Facebook
         log_msg(f'{pid}: Opening Facebook...', state)
         d.get('https://www.facebook.com/')
         time.sleep(5)
         
-        # Step 2: Apply cookies
+        # Apply cookies
         if config.get('cookies') and config['cookies'].strip():
             log_msg(f'{pid}: Applying cookies...', state)
             for c in config['cookies'].split(';'):
@@ -303,7 +386,7 @@ def run_auto(config, state, pid='AUTO-1'):
             d.refresh()
             time.sleep(5)
         
-        # Step 3: Go to chat
+        # Go to chat
         if config.get('chat_id'):
             cid = config['chat_id'].strip()
             log_msg(f'{pid}: Opening chat: {cid}', state)
@@ -314,45 +397,52 @@ def run_auto(config, state, pid='AUTO-1'):
         
         time.sleep(10)
         
-        # Step 4: Find input box
+        # Find input
         inp = find_input_box(d, pid, state)
         if not inp:
-            log_msg(f'{pid}: FAILED - No input found!', state, 'err')
+            log_msg(f'{pid}: FAILED - No input!', state, 'err')
             state.running = False
             return 0
         
-        # Step 5: Send messages
-        delay = int(config.get('delay', 5))
+        # Send messages
+        delay = max(int(config.get('delay', 5)), 3)  # Minimum 3 sec
         msgs = [m.strip() for m in config.get('messages', '').split('\n') if m.strip()]
-        if not msgs:
-            msgs = ['Hello!']
+        if not msgs: msgs = ['Hello!']
         
         sent = 0
         while state.running:
             try:
-                # Pick message
                 m = msgs[state.message_rotation_index % len(msgs)]
                 state.message_rotation_index += 1
-                
-                # Add prefix
                 if config.get('name_prefix'):
                     m = f"{config['name_prefix']} {m}"
                 
-                # Send
-                if type_and_send(d, inp, m, state):
+                # USE SEND_KEYS METHOD (MORE RELIABLE)
+                success = type_and_send_v2(d, inp, m, state)
+                
+                if success:
                     sent += 1
                     state.message_count = sent
-                    log_msg(f'{pid}: Sent ({sent}): {m[:30]}...', state, 'ok')
+                    log_msg(f'{pid} ✅ Sent ({sent}): {m[:35]}...', state, 'ok')
                 else:
-                    log_msg(f'{pid}: Send failed!', state, 'err')
+                    log_msg(f'{pid} ❌ Send failed!', state, 'err')
                 
                 state.consecutive_errors = 0
+                
+                # Log check - verify message appeared
+                try:
+                    last_msgs = d.find_elements(By.CSS_SELECTOR, 
+                        'div[data-scope="messages_table"] div[data-scope="message"]')
+                    log_msg(f'{pid}: Chat has {len(last_msgs)} messages visible', state)
+                except:
+                    pass
+                
                 time.sleep(delay)
                 
             except Exception as e:
                 state.consecutive_errors += 1
                 state.error_count += 1
-                log_msg(f'{pid}: Error: {str(e)[:60]}', state, 'err')
+                log_msg(f'{pid} ❌ Error: {str(e)[:60]}', state, 'err')
                 
                 if state.consecutive_errors >= 3:
                     log_msg(f'{pid}: Restarting browser...', state)
@@ -366,17 +456,18 @@ def run_auto(config, state, pid='AUTO-1'):
                 
                 time.sleep(5)
         
-        log_msg(f'{pid}: STOPPED. Total: {sent}', state, 'ok')
+        log_msg(f'{pid} ✅ STOPPED. Total: {sent}', state, 'ok')
         return sent
         
     except Exception as e:
-        log_msg(f'{pid}: FATAL: {e}', state, 'err')
+        log_msg(f'{pid} ❌ FATAL: {e}', state, 'err')
         state.running = False
         return 0
     finally:
         if d:
             try: d.quit(); log_msg(f'{pid}: Browser closed', state)
             except: pass
+
 
 def start_auto(config):
     s = st.session_state.automation_state
