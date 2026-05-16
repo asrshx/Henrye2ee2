@@ -627,7 +627,7 @@ custom_css = """
     top: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #0a0a0f 0%, #1a0a2e 50%, #0d0b1a 100%);
     color: white;
     padding: 12px 20px;
     z-index: 9999;
@@ -640,7 +640,7 @@ custom_css = """
 
 .stApp {
     padding-top: 60px;
-    background: linear-gradient(135deg, #f4f9ff 0%, #e9f3ff 40%, #e1f0ff 100%);
+    background: linear-gradient(135deg, #0a0a0f 0%, #1a0a2e 50%, #0d0b1a 100%);
     background-attachment: fixed;
 }
 
