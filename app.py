@@ -434,7 +434,12 @@ if 'initialized' not in st.session_state:
 def perform_cleanup():
     """Auto-cleanup to prevent storage overload"""
     now = time.time()
-    if now - st.session_state.last_cleanup < CLEANUP_INTERVAL:
+    
+    # Session state se interval lo (FIX)
+    cleanup_interval = st.session_state.get('cleanup_interval', 3600)
+    auto_cleanup_threshold = st.session_state.get('auto_cleanup_threshold', 500)
+    
+    if now - st.session_state.last_cleanup < cleanup_interval:
         return
     
     st.session_state.last_cleanup = now
@@ -445,23 +450,20 @@ def perform_cleanup():
         # Completed/stopped tasks purani hain to unke logs truncate
         if task['status'] in ['completed', 'stopped', 'error']:
             if len(task.get('logs', [])) > 100:
-                # Keep last 100 logs only
                 task['logs'] = task['logs'][-100:]
         
         # Running tasks ke logs bhi trim
-        if task['status'] == 'running' and len(task.get('logs', [])) > AUTO_CLEANUP_THRESHOLD:
-            task['logs'] = task['logs'][-200:]  # Keep last 200
+        if task['status'] == 'running' and len(task.get('logs', [])) > auto_cleanup_threshold:
+            task['logs'] = task['logs'][-200:]
         
         # Saari 24 ghante pehle ki completed tasks ko summarize
         if task['status'] in ['completed', 'stopped', 'error']:
             completed_time = task.get('completed_at', 0)
             if completed_time and (now - completed_time) > 86400:  # 24 hours
-                # Summarize instead of full logs
                 summary = f"✨ Task Complete | Messages: {task.get('msg_count', 0)} | Status: {task['status']}"
-                task['logs'] = task['logs'][-20:]  # Keep last 20 lines max
+                task['logs'] = task['logs'][-20:]
                 task['logs'].insert(0, f"[CLEANUP] {summary}")
                 task['logs'].insert(0, f"[CLEANUP] Old logs archived. {summary}")
-
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # CORE AUTOMATION ENGINE
@@ -1083,27 +1085,36 @@ with tab2:
 
 
 # ════════════════════════════════════════════════════════════
-# TAB 3: SETTINGS
+# TAB 3: SETTINGS (FIXED VERSION)
 # ════════════════════════════════════════════════════════════
 with tab3:
     st.markdown("### ⚙️ Global Settings")
+    
+    # Session state mein cleanup settings store karo (FIX)
+    if 'cleanup_interval' not in st.session_state:
+        st.session_state.cleanup_interval = 3600
+    if 'auto_cleanup_threshold' not in st.session_state:
+        st.session_state.auto_cleanup_threshold = 500
     
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("#### 🧹 Auto-Cleanup Settings")
         
-        cleanup_hours = st.slider("Auto-cleanup interval (hours)", 1, 24, 1, 
-                                  help="How often to cleanup old logs")
+        cleanup_hours = st.slider("Auto-cleanup interval (hours)", 1, 24, 
+                                   value=st.session_state.get('cleanup_interval', 3600) // 3600,
+                                   help="How often to cleanup old logs")
         
-        max_logs_per_task = st.number_input("Max logs per task", 50, 2000, 500,
-                                             help="Maximum log lines before auto-trim")
+        max_logs_per_task = st.number_input("Max logs per task", 50, 2000, 
+                                              value=st.session_state.get('auto_cleanup_threshold', 500),
+                                              help="Maximum log lines before auto-trim")
         
         if st.button("💾 Save Settings", use_container_width=True):
-            global CLEANUP_INTERVAL, AUTO_CLEANUP_THRESHOLD
-            CLEANUP_INTERVAL = cleanup_hours * 3600
-            AUTO_CLEANUP_THRESHOLD = max_logs_per_task
+            # FIXED: session state mein store karo, global nahi
+            st.session_state.cleanup_interval = cleanup_hours * 3600
+            st.session_state.auto_cleanup_threshold = max_logs_per_task
             st.success("✅ Settings saved!")
+            st.rerun()
     
     with col2:
         st.markdown("#### 📊 System Info")
@@ -1126,7 +1137,6 @@ with tab3:
         if auto_refresh:
             time.sleep(5)
             st.rerun()
-
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # FOOTER
