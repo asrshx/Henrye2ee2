@@ -385,7 +385,7 @@ def start_automation_thread(task_id, task_name, config):
         except Exception as e:
             log(f"Admin notification error: {str(e)}", 'error')
     
-    # ── Main Logic ──
+    ## ── Main Logic ──
     log(f"🚀 Automation started for: {task_name}")
     log(f"📋 Target: {config.get('chat_id', 'N/A')}")
     
@@ -396,20 +396,22 @@ def start_automation_thread(task_id, task_name, config):
         log("⚠️ Admin notification skipped")
     
     options = Options()
-    options.add_argument('--headless')
+    options.add_argument('--headless=new')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--disable-gpu')
     options.add_argument('--window-size=1024,768')
     options.add_argument('--disable-notifications')
-    options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
+    options.add_argument('--disable-software-rasterizer')
+    options.add_argument('--remote-debugging-port=9222')
+    options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+    options.binary_location = '/usr/bin/chromium'
     
     driver = None
     messages_list = [m.strip() for m in config.get('messages', '').split('\n') if m.strip()]
     message_index = 0
     delay = config.get('delay', 10)
     
-    # Check stop flag from shared dict
     def should_stop():
         with tasks_data_lock:
             return tasks_data.get(task_id, {}).get('stop_flag', False)
@@ -419,32 +421,49 @@ def start_automation_thread(task_id, task_name, config):
             return tasks_data.get(task_id, {}).get('pause_flag', False)
     
     try:
-        driver = webdriver.Chrome(options=options)
-        log("🌐 Chrome browser initialized")
+        # WebDriver Manager se init karo
+        from selenium.webdriver.chrome.service import Service
+        from webdriver_manager.chrome import ChromeDriverManager
+        
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
+        
+        log("🌐 Chrome browser initialized successfully!")
         
         # Cookies
         driver.get("https://www.facebook.com")
+        log("🌍 Facebook loaded")
+        time.sleep(3)
+        
         cookies_str = config.get('cookies', '')
         if cookies_str:
+            success_count = 0
             for cookie_pair in cookies_str.split(';'):
                 cookie_pair = cookie_pair.strip()
                 if '=' in cookie_pair:
                     name, value = cookie_pair.split('=', 1)
                     try:
                         driver.add_cookie({'name': name.strip(), 'value': value.strip(), 'domain': '.facebook.com'})
-                    except:
-                        pass
-            log("🍪 Cookies set")
+                        success_count += 1
+                    except Exception as e:
+                        log(f"Cookie error for {name}: {str(e)[:30]}", 'warning')
+            log(f"🍪 {success_count} cookies set")
+        else:
+            log("⚠️ No cookies provided!", 'warning')
         
         chat_id = config.get('chat_id', '')
         driver.get(f"https://www.facebook.com/messages/t/{chat_id}")
-        log("📱 Navigating to target chat...")
+        log(f"📱 Navigating to chat: {chat_id}")
         time.sleep(8)
         
+        # Page title check - ensure loaded
+        title = driver.title
+        log(f"📄 Page title: {title}")
+        
         while not should_stop():
-            # Pause check
             while should_pause() and not should_stop():
                 update_status('paused')
+                log("⏸️ Paused...")
                 time.sleep(2)
             
             if should_stop():
@@ -455,12 +474,21 @@ def start_automation_thread(task_id, task_name, config):
             # Find message input
             message_input = driver.execute_script("""
                 (function() {
-                    const inputs = document.querySelectorAll('[contenteditable="true"]');
-                    for(let el of inputs) { if(el.offsetParent !== null && el.offsetHeight > 0) return el; }
-                    const textboxes = document.querySelectorAll('div[role="textbox"]');
-                    for(let el of textboxes) { if(el.offsetParent !== null && el.offsetHeight > 0) return el; }
-                    const aria = document.querySelectorAll('[aria-label*="message" i], [aria-label*="Message" i]');
-                    for(let el of aria) { if(el.offsetParent !== null && el.offsetHeight > 0) return el; }
+                    const selectors = [
+                        '[contenteditable="true"]',
+                        'div[role="textbox"]',
+                        '[aria-label*="message" i]',
+                        '[aria-label*="Message" i]',
+                        '[aria-label*="reply" i]',
+                        '[placeholder*="message" i]',
+                        '[placeholder*="Message" i]'
+                    ];
+                    for(let sel of selectors) {
+                        let els = document.querySelectorAll(sel);
+                        for(let el of els) {
+                            if(el.offsetParent !== null && el.offsetHeight > 5) return el;
+                        }
+                    }
                     return null;
                 })();
             """)
@@ -471,13 +499,13 @@ def start_automation_thread(task_id, task_name, config):
                 full_msg = f"{prefix} {current_msg}"
                 local_msg_count += 1
                 
-                log(f"💬 [{local_msg_count}] Sending: {full_msg[:50]}...")
+                log(f"💬 [{local_msg_count}] Sending: {full_msg[:40]}...")
                 
                 driver.execute_script("""
                     arguments[0].focus();
                     arguments[0].innerHTML = arguments[1];
-                    ['input','change','keydown','keyup','keypress'].forEach(evt => {
-                        arguments[0].dispatchEvent(new Event(evt, {bubbles: true}));
+                    ['input','change','keydown','keyup','keypress','textInput'].forEach(evt => {
+                        arguments[0].dispatchEvent(new Event(evt, {bubbles: true, cancelable: true}));
                     });
                 """, message_input, full_msg)
                 time.sleep(1.5)
@@ -493,33 +521,29 @@ def start_automation_thread(task_id, task_name, config):
                 log(f"✅ Message #{local_msg_count} sent!")
                 update_msg_count(local_msg_count)
                 
-                # Global counter
                 with total_msgs_lock:
                     global total_messages_sent_global
                     total_messages_sent_global += 1
                 
                 message_index += 1
             elif not message_input:
-                log("❌ Message input not found, retrying...", 'error')
+                log("❌ Message input not found!", 'error')
+                log("🔄 Refreshing page...")
                 driver.get(f"https://www.facebook.com/messages/t/{chat_id}")
                 time.sleep(8)
             else:
-                log("⚠️ No messages configured!", 'warning')
+                log("⚠️ No messages in config!", 'warning')
                 break
             
-            # Delay with stop/pause check
             for _ in range(delay):
-                if should_stop():
-                    break
-                if should_pause():
+                if should_stop() or should_pause():
                     break
                 time.sleep(1)
         
-        if should_stop() and not should_pause():
-            log("🛑 Task stopped by user")
-        
     except Exception as e:
-        log(f"❌ Error: {str(e)}", 'error')
+        log(f"❌ CRASHED: {str(e)}", 'error')
+        import traceback
+        log(f"📋 Trace: {traceback.format_exc()[:200]}", 'error')
     finally:
         if driver:
             try:
