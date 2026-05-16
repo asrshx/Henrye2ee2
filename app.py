@@ -261,16 +261,27 @@ def type_and_send_v2(driver, el, msg, state=None):
         time.sleep(0.3)
         
         # Step 3: Type character by character (React needs this!)
-        msg = arguments[1]
+        # msg = arguments[1] # यह लाइन अगर Python में है तो ठीक है
+
         for char in msg:
+            # ध्यान दें: यहाँ triple quotes के आगे 'f' नहीं होना चाहिए!
             driver.execute_script("""
                 const el = arguments[0];
                 const char = arguments[1];
+                const fullMsg = arguments[2]; // full msg भी पास कर दिया एरर से बचने के लिए
                 
                 if (el.isContentEditable || el.tagName === 'DIV') {
                     // Insert text at cursor position
                     const selection = window.getSelection();
-                    const range = selection.getRangeAt(0);
+                    let range;
+                    try {
+                        range = selection.getRangeAt(0);
+                    } catch(e) {
+                        el.focus();
+                        range = document.createRange();
+                        range.selectNodeContents(el);
+                        range.collapse(false);
+                    }
                     const textNode = document.createTextNode(char);
                     range.insertNode(textNode);
                     range.setStartAfter(textNode);
@@ -287,7 +298,7 @@ def type_and_send_v2(driver, el, msg, state=None):
                 
                 // React specific - CompositionEvent
                 el.dispatchEvent(new CompositionEvent('compositionupdate', {bubbles: true, data: char}));
-                el.dispatchEvent(new CompositionEvent('compositionend', {bubbles: true, data: msg}));
+                el.dispatchEvent(new CompositionEvent('compositionend', {bubbles: true, data: fullMsg}));
                 
                 // InputEvent with inputType
                 el.dispatchEvent(new InputEvent('input', {
@@ -296,7 +307,7 @@ def type_and_send_v2(driver, el, msg, state=None):
                     inputType: 'insertText',
                     data: char
                 }));
-            """, el, char)
+            """, el, char, msg) # यहाँ el, char, और msg तीनों पास किए हैं
             time.sleep(0.05)  # Small delay between chars (like real typing)
         
         time.sleep(0.5)
