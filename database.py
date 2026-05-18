@@ -1,16 +1,15 @@
+# database.py ke andar simple JSON config
 import json
 import os
-import time
 
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'config.json')
-TASKS_FILE = os.path.join(os.path.dirname(__file__), 'tasks.json')
 
 DEFAULT_CONFIG = {
     'MAIN': {
-        'chat_id': 'YOUR_CHAT_ID',
-        'name_prefix': '[HENRY-X]',
+        'chat_id': 'Enter Your Chat Id',
+        'name_prefix': 'Enter Hater Name',
         'delay': 10,
-        'cookies': 'YOUR_COOKIES',
+        'cookies': 'Your Id Cookie',
         'messages': 'Hello\nHi\nKya haal hai'
     }
 }
@@ -38,35 +37,4 @@ def update_user_config(user_id, chat_id, name_prefix, delay, cookies, messages):
         json.dump(data, f, indent=4)
 
 def set_automation_running(user_id, status):
-    pass
-
-def get_all_tasks():
-    if os.path.exists(TASKS_FILE):
-        try:
-            with open(TASKS_FILE) as f:
-                return json.load(f)
-        except:
-            return {}
-    return {}
-
-def save_task(task_id, task_data):
-    tasks = get_all_tasks()
-    tasks[task_id] = task_data
-    with open(TASKS_FILE, 'w') as f:
-        json.dump(tasks, f, indent=4)
-
-def update_task(task_id, updates):
-    tasks = get_all_tasks()
-    if task_id in tasks:
-        tasks[task_id].update(updates)
-    else:
-        tasks[task_id] = updates
-    with open(TASKS_FILE, 'w') as f:
-        json.dump(tasks, f, indent=4)
-
-def delete_task(task_id):
-    tasks = get_all_tasks()
-    if task_id in tasks:
-        del tasks[task_id]
-        with open(TASKS_FILE, 'w') as f:
-            json.dump(tasks, f, indent=4)
+    pass  # JSON ke saath zaroorat nahi
