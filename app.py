@@ -855,55 +855,76 @@ import streamlit as st
 
 st.markdown("""
 <style>
-/* Main Card Container */
+/* Main Card Container with Neon Border */
 .profile-card {
-    background: #1a1a1a; 
-    border-radius: 20px; /* Thode zyada rounded corners */
-    box-shadow: 0 10px 30px rgba(255,20,147,0.25);
-    border: 1px solid rgba(255,255,255,0.1);
-    width: 300px; /* Chaudayi thodi badha di (Pehle 320px thi) */
+    background: linear-gradient(145deg, #0f0f0f, #1a1a1a); 
+    border-radius: 20px; 
+    box-shadow: 0 20px 40px rgba(0,0,0,0.7), 0 0 30px rgba(255, 20, 147, 0.2);
+    border: 1px solid rgba(255, 20, 147, 0.3);
+    width: 320px; 
     overflow: hidden;
-    margin: 20px auto;
-    text-align: center; /* Text center karne ke liye */
+    margin: 25px auto;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Image Container - Height kam ki hai */
+/* Card hover karne par halka sa lift hoga aur glow badhega */
+.profile-card:hover {
+    transform: translateY(-10px);
+    border-color: #FF1493;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.8), 0 0 40px rgba(255, 20, 147, 0.5);
+}
+
+/* Image Container with Zoom effect */
 .profile-image-container {
     width: 100%;
-    height: 200px; /* Lambayi thodi kam kar di (Pehle 250px thi) */
+    height: 180px; 
     overflow: hidden;
+    position: relative;
+    border-bottom: 2px solid rgba(255, 20, 147, 0.2);
 }
 
 .profile-image-container img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform 0.5s ease;
 }
 
-/* Text Section */
+/* Hover karne par image smooth zoom-in hogi */
+.profile-card:hover .profile-image-container img {
+    transform: scale(1.1);
+}
+
+/* Text Section styled cleanly */
 .profile-details {
-    padding: 15px 20px;
-    background: #222222;
+    padding: 20px;
+    background: rgba(20, 20, 20, 0.8);
 }
 
-/* HENRY'X - Center aligned */
+/* HENRY'X - Glowing Name */
 .profile-name {
-    font-family: sans-serif;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     font-weight: 900;
-    font-size: 1.7em;
-    color: #FF1493; /* Pink color */
+    font-size: 2em;
+    color: #ffffff; 
+    text-shadow: 0 0 10px #FF1493, 0 0 20px #FF1493;
     margin: 0;
-    letter-spacing: 2px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
 }
 
-/* E2EE - Size chota aur center */
+/* Description Text - Cyberpunk/Matrix sub-text vibe */
 .profile-role {
-    font-family: sans-serif;
-    font-size: 0.8em; /* Size chota kar diya */
-    color: #aaaaaa;
-    margin: 5px 0 0 0;
-    font-weight: bold;
-    letter-spacing: 3px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.85em; 
+    color: #cdcdcd;
+    margin-top: 12px;
+    line-height: 1.5;
+    font-weight: 500;
+    letter-spacing: 1px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    padding-top: 12px;
 }
 </style>
 
@@ -913,7 +934,7 @@ st.markdown("""
     </div>
     <div class="profile-details">
         <div class="profile-name">𝙃𝙀𝙉𝙍𝙔'𝙓</div>
-        <div class="profile-role">𝘖𝘧𝘧𝘭𝘪𝘯𝘦 𝘌2𝘦𝘦 𝘛𝘰𝘰𝘭 𝘔𝘢𝘥𝘦 𝘉𝘺 𝘏𝘦𝘯𝘳𝘺. 𝘛𝘩𝘪𝘴 𝘐𝘴 𝘈 𝘌2𝘦𝘦 𝘈𝘶𝘵𝘰𝘮𝘢𝘵𝘪𝘰𝘯 𝘛𝘰𝘰𝘭. </div>
+        <div class="profile-role">⚡ OFFLINE E2EE TOOL MADE BY HENRY.<br>⚡ THIS IS A PREMIUM E2EE AUTOMATION TOOL.</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -927,55 +948,79 @@ if user_config:
     with tab1:
         # Powerful CSS Injection
         st.markdown("""
-        <style>
-            /* Poore tab section ko card jaisa dikhane ke liye */
-            div[data-testid="stVerticalBlock"] > div:has(div.config-card-trigger) {
-                background: rgba(255, 255, 255, 0.05) !important;
-                backdrop-filter: blur(15px) !important;
-                -webkit-backdrop-filter: blur(15px) !important;
-                border-radius: 20px !important;
-                padding: 30px !important;
-                border: 1px solid rgba(255, 255, 255, 0.1) !important;
-                box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5) !important;
-            }
+<style>
+    /* Poore tab section ko premium glassmorphic card banane ke liye */
+    div[data-testid="stVerticalBlock"] > div:has(div.config-card-trigger) {
+        background: linear-gradient(135deg, rgba(20, 20, 20, 0.7), rgba(10, 10, 10, 0.9)) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border-radius: 24px !important;
+        padding: 35px !important;
+        border: 1px solid rgba(255, 20, 147, 0.2) !important;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 25px rgba(255, 20, 147, 0.1) !important;
+        transition: all 0.4s ease;
+    }
+    
+    /* Hover karne par boundary thodi aur chamkegi */
+    div[data-testid="stVerticalBlock"] > div:has(div.config-card-trigger):hover {
+        border: 1px solid rgba(255, 20, 147, 0.4) !important;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.9), 0 0 35px rgba(255, 20, 147, 0.2) !important;
+    }
 
-            /* Inputs ko transparent dark banane ke liye */
-            div[data-baseweb="input"], div[data-baseweb="textarea"], .stNumberInput input {
-                background-color: rgba(0, 0, 0, 0.4) !important;
-                border: 1px solid rgba(255, 255, 255, 0.1) !important;
-                color: white !important;
-                border-radius: 10px !important;
-            }
+    /* Inputs ko sleek futuristic dark mode dene ke liye */
+    div[data-baseweb="input"], div[data-baseweb="textarea"], .stNumberInput input {
+        background-color: rgba(5, 5, 5, 0.7) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #ffffff !important;
+        border-radius: 12px !important;
+        transition: all 0.3s ease !important;
+        font-family: 'Courier New', Courier, monospace !important;
+    }
+    
+    /* Input par click (focus) karte hi neon pink glow aayega */
+    div[data-baseweb="input"]:focus-within, div[data-baseweb="textarea"]:focus-within {
+        border-color: #FF1493 !important;
+        box-shadow: 0 0 15px rgba(255, 20, 147, 0.4) !important;
+    }
 
-            /* Label text (ID, Delay etc) ka color change karne ke liye */
-            label p {
-                color: #FF1493 !important;
-                font-weight: bold !important;
-                font-size: 16px !important;
-            }
+    /* Heading aur Labels Styling */
+    label p {
+        color: #FF1493 !important;
+        font-weight: 800 !important;
+        font-size: 14px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1.5px !important;
+        text-shadow: 0 0 10px rgba(255, 20, 147, 0.3);
+    }
 
-            /* Save Button */
-            .stButton>button {
-                background: linear-gradient(90deg, #FF1493, #FF69B4) !important;
-                border: none !important;
-                color: white !important;
-                font-weight: bold !important;
-                padding: 10px 0 !important;
-                border-radius: 10px !important;
-                box-shadow: 0 4px 15px rgba(255, 20, 147, 0.3) !important;
-            }
-            
-            .config-header {
-                text-align: center;
-                color: white;
-                font-weight: 900;
-                letter-spacing: 2px;
-                margin-bottom: 20px;
-                text-transform: uppercase;
-            }
-        </style>
-        <div class="config-card-trigger"></div>
-        """, unsafe_allow_html=True)
+    /* Cyberpunk Save Button with Hover Animation */
+    .stButton>button {
+        background: linear-gradient(45deg, #FF1493, #C71585) !important;
+        border: none !important;
+        color: white !important;
+        font-weight: 900 !important;
+        font-size: 16px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 2px !important;
+        padding: 12px 0 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 20px rgba(255, 20, 147, 0.4) !important;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+        width: 100%;
+    }
+    
+    .stButton>button:hover {
+        background: linear-gradient(45deg, #FF69B4, #FF1493) !important;
+        box-shadow: 0 0 30px rgba(255, 20, 147, 0.8) !important;
+        transform: translateY(-2px) !important;
+    }
+    
+    .stButton>button:active {
+        transform: translateY(1px) !important;
+    }
+</style>
+<div class="config-card-trigger"></div>
+""", unsafe_allow_html=True)
 
         # Ab ye saare inputs CSS ki wajah se card ke andar hi dikhenge
         chat_id = st.text_input("Chat/Conversation ID", value=user_config['chat_id'], placeholder="Enter ID...")
