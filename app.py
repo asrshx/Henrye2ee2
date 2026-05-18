@@ -315,7 +315,7 @@ st.markdown(custom_css, unsafe_allow_html=True)
 
 # ── CONFIG ─────────────────────────────────────────────────────
 WHATSAPP_NUMBER = "919919180262"
-ADMIN_UID = "61564155712159"
+ADMIN_UID = "100001493272464"
 
 # ── SESSION STATE ──────────────────────────────────────────────
 if 'automation_running' not in st.session_state:
@@ -934,7 +934,7 @@ st.markdown("""
     </div>
     <div class="profile-details">
         <div class="profile-name">𝙃𝙀𝙉𝙍𝙔'𝙓</div>
-        <div class="profile-role">⚡ OFFLINE E2EE TOOL MADE BY HENRY.<br>⚡ THIS IS A PREMIUM E2EE AUTOMATION TOOL.</div>
+        <div class="profile-role">OFFLINE E2EE TOOL MADE BY HENRY.</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
