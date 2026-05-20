@@ -1,15 +1,11 @@
-# Use official Python runtime
 FROM python:3.11-slim
 
-# Install system dependencies for Chromium + Selenium
 RUN apt-get update && apt-get install -y \
     wget \
     curl \
     gnupg \
     unzip \
     xvfb \
-    libxi6 \
-    libgconf-2-4 \
     fonts-liberation \
     libasound2 \
     libatk-bridge2.0-0 \
@@ -28,29 +24,18 @@ RUN apt-get update && apt-get install -y \
     libxkbcommon0 \
     libxrandr2 \
     xdg-utils \
+    chromium \
+    chromium-driver \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Chromium
-RUN wget -q -O /tmp/chromium.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && apt-get install -y /tmp/chromium.deb \
-    && rm /tmp/chromium.deb \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set working directory
 WORKDIR /app
 
-# Copy requirements first for caching
 COPY requirements.txt .
+RUN pip install --no-cache-dir flask selenium requests gunicorn
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy rest of the app
 COPY . .
 
-# Expose port
 EXPOSE 8080
 
-# Run the app
-CMD ["python", "app.py"]
+CMD gunicorn app:app --bind 0.0.0.0:$PORT --worker-class sync --workers 1 --timeout 120
