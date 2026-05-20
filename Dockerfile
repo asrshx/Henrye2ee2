@@ -1,22 +1,56 @@
+# Use official Python runtime
 FROM python:3.11-slim
 
+# Install system dependencies for Chromium + Selenium
 RUN apt-get update && apt-get install -y \
-    chromium \
-    chromium-driver \
-    chromium-common \
+    wget \
+    curl \
+    gnupg \
+    unzip \
+    xvfb \
+    libxi6 \
+    libgconf-2-4 \
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdrm2 \
+    libgbm1 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libu2f-udev \
+    libvulkan1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxkbcommon0 \
+    libxrandr2 \
+    xdg-utils \
+    --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-RUN chromium --version && chromedriver --version
+# Install Chromium
+RUN wget -q -O /tmp/chromium.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && apt-get install -y /tmp/chromium.deb \
+    && rm /tmp/chromium.deb \
+    && rm -rf /var/lib/apt/lists/*
 
+# Set working directory
 WORKDIR /app
 
+# Copy requirements first for caching
 COPY requirements.txt .
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy rest of the app
 COPY . .
 
+# Expose port
 EXPOSE 5000
 
-ENV DISPLAY=:99
-
-CMD ["streamlit", "run", "app.py", "--server.port", "8080", "--server.address", "0.0.0.0", "--server.headless", "true", "--browser.gatherUsageStats", "false"]
+# Run the app
+CMD ["python", "app.py"]
