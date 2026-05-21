@@ -1,41 +1,24 @@
 FROM python:3.11-slim
 
+# Install Chromium properly
 RUN apt-get update && apt-get install -y \
-    wget \
-    curl \
-    gnupg \
-    unzip \
-    xvfb \
-    fonts-liberation \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libcups2 \
-    libdrm2 \
-    libgbm1 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libu2f-udev \
-    libvulkan1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxkbcommon0 \
-    libxrandr2 \
-    xdg-utils \
     chromium \
     chromium-driver \
-    --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
+
+# Yeh ensure karega ki Chromium sahi version hai
+RUN chromium --version && chromedriver --version
 
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir flask selenium requests gunicorn
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
 EXPOSE 8080
 
-CMD python app.py
+# --headless mode container ke liye
+ENV DISPLAY=:99
+
+CMD ["streamlit", "run", "app.py", "--server.port", "8080", "--server.address", "0.0.0.0", "--server.headless", "true", "--browser.gatherUsageStats", "false"]
